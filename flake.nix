@@ -15,5 +15,21 @@
           pkgs.zls
         ];
       };
+
+      packages.x86_64-linux = {
+        nixwhich = pkgs.stdenv.mkDerivation {
+          name = "nixwhich";
+          version = "0.0.1";
+          src = ./src;
+          buildInputs = [ pkgs.zig ];
+          buildPhase = ''
+            zig build-exe -O ReleaseFast main.zig
+          '';
+          installPhase = ''
+            mkdir -p $out/bin
+            mv main $out/bin/nixwhich
+          '';
+        };
+      };
     };
 }
