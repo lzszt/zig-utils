@@ -1,12 +1,13 @@
 const std = @import("std");
 const Io = std.Io;
+const File = std.Io.File;
 
 pub fn main(init: std.process.Init) !void {
     const IO = init.io;
     const args = try init.minimal.args.toSlice(init.arena.allocator());
 
     var stdout_buf: [4096]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buf);
+    var stdout_writer = File.stdout().writer(init.io, &stdout_buf);
     const out = &stdout_writer.interface;
 
     if (args.len == 1) {
@@ -23,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
 
     var found = false;
 
-    dirLoop: while (dirs.next()) |dirPath| {
+    while (dirs.next()) |dirPath| {
         const dirOrError = std.Io.Dir.openDirAbsolute(
             IO,
             dirPath,
@@ -32,24 +33,26 @@ pub fn main(init: std.process.Init) !void {
 
         if (dirOrError) |dir| {
             defer dir.close(IO);
-            var dirIterator = dir.iterate();
 
-            while (try dirIterator.next(IO)) |dirContent| {
-                if (std.mem.eql(u8, dirContent.name, PROG)) {
-                    if (dirContent.kind == std.Io.File.Kind.sym_link) {
-                        var buf: [std.fs.max_path_bytes]u8 = undefined;
+            const progFile = dir.openFile(IO, PROG, .{});
+            if (progFile) |file| {
+                defer file.close(IO);
+                const stat = try File.stat(file, IO);
 
-                        const len = try dir.readLink(IO, PROG, &buf);
-                        const fullPath = buf[0..len];
+                const is_file = stat.kind == File.Kind.file;
+                const is_exec = (@backingInt(stat.permissions) & 0o111) != 0;
 
-                        try out.print("{s}\n", .{fullPath});
-                    } else {
-                        try out.print("{s}/{s}\n", .{ dirPath, PROG });
-                    }
+                if (is_file and is_exec) {
                     found = true;
-                    break :dirLoop;
+
+                    var buf: [std.fs.max_path_bytes]u8 = undefined;
+                    const len = try file.realPath(IO, &buf);
+                    const fullPath = buf[0..len];
+
+                    try out.print("{s}\n", .{fullPath});
+                    break;
                 }
-            }
+            } else |_| {}
         } else |_| {}
     }
 
