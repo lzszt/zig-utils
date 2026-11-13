@@ -2,11 +2,15 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   outputs =
     {
+      self,
       nixpkgs,
       ...
     }:
     let
-      pkgs = import nixpkgs { system = "x86_64-linux"; };
+      pkgs = import nixpkgs {
+        system = "x86_64-linux";
+        overlays = [ (import ./nix/overlays.nix) ];
+      };
     in
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
@@ -17,22 +21,9 @@
       };
 
       packages.x86_64-linux = {
-        nixwhich = pkgs.stdenv.mkDerivation {
-          name = "nixwhich";
-          version = "0.0.1";
-          src = ./src/nixwhich.zig;
-          buildInputs = [ pkgs.zig ];
-          unpackPhase = ''
-            cp $src main.zig
-          '';
-          buildPhase = ''
-            zig build-exe -O ReleaseSafe -target x86_64-native main.zig
-          '';
-          installPhase = ''
-            mkdir -p $out/bin
-            mv main $out/bin/nixwhich
-          '';
-        };
+        nixwhich = pkgs.nixwhich;
       };
+      overlays.default = import ./nix/overlays.nix;
+      nixosModules.default = import ./nix/nixosModules.nix { inherit self; };
     };
 }
