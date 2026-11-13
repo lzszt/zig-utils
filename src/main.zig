@@ -56,5 +56,11 @@ pub fn main(init: std.process.Init) !void {
     if (!found) {
         try out.print("failed to find {s} in {s}\n", .{ PROG, PATH });
     }
+
     try out.flush();
+    if (found) {
+        std.process.exit(0);
+    } else {
+        std.process.exit(1);
+    }
 }
