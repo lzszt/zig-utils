@@ -23,7 +23,7 @@
           src = ./src;
           buildInputs = [ pkgs.zig ];
           buildPhase = ''
-            zig build-exe -O ReleaseFast main.zig
+            zig build-exe -O ReleaseSafe -target x86_64-native main.zig
           '';
           installPhase = ''
             mkdir -p $out/bin
