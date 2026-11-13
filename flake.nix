@@ -20,8 +20,11 @@
         nixwhich = pkgs.stdenv.mkDerivation {
           name = "nixwhich";
           version = "0.0.1";
-          src = ./src;
+          src = ./src/nixwhich.zig;
           buildInputs = [ pkgs.zig ];
+          unpackPhase = ''
+            cp $src main.zig
+          '';
           buildPhase = ''
             zig build-exe -O ReleaseSafe -target x86_64-native main.zig
           '';
